@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "keras-flops"
+version = "0.1.0"
+description = ""
+authors = ["tokusumi <tksmtoms@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/tokusumi/keras-flops"
+include = [
+    "LICENSE",
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+tensorflow = "2.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.0.1"
+pytest-cov = "^2.10.0"
+mypy = "^0.782"
+black = "^19.10b0"
+flake8 = "^3.8.3"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
