@@ -2,6 +2,8 @@ name: Tests
 on: 
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   pytest:
@@ -21,5 +23,6 @@ jobs:
     - uses: Gr1N/setup-poetry@v2
       with:
         poetry-version: ${{ matrix.poetry-version }}
+    - run: poetry run python -m pip install --upgrade pip
     - run: poetry install
     - run: poetry run bash scripts/test.sh
