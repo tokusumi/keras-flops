@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-        tf-version: [2.1, 2.2, 2.3]
+        tf-version: [2.2, 2.3]
         poetry-version: [1.0.0]
 
     steps:
