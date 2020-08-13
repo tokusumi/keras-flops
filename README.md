@@ -1,2 +1,2 @@
 # keras-flops
-FLOPS (Floatting-point Operators per second) calculator for neural network architecture built in tf.keras
+FLOPs calculator for neural network architecture written in tensorflow 2.x (tf.keras)
