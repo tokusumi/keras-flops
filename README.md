@@ -1,2 +1,46 @@
 # keras-flops
-FLOPs calculator for neural network architecture written in tensorflow 2.x (tf.keras)
+
+![](https://github.com/tokusumi/keras-flops/workflows/Tests/badge.svg)
+
+FLOPs calculator for neural network architecture written in tensorflow (tf.keras) v2.2+
+
+This stands on the shoulders of giants, [tf.profiler](https://www.tensorflow.org/api_docs/python/tf/compat/v1/profiler/Profiler). 
+
+## Requirements
+
+* Python 3.6+
+* Tensorflow 2.2+
+
+## Installation
+
+This implementation is simple thanks to stands on the shoulders of giants, [tf.profiler](https://www.tensorflow.org/api_docs/python/tf/compat/v1/profiler/Profiler). Only one function is defined.
+
+Copy and paste [it](https://github.com/tokusumi/keras-flops/blob/master/keras_flops/flops_calculation.py).
+
+## Example
+
+See colab examples [here](https://github.com/tokusumi/keras-flops/tree/master/notebooks) in details.
+
+```python
+from tensorflow.keras import Model, Input
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
+
+from keras_flops import get_flops
+
+# build model
+inp = Input((32, 32, 3))
+x = Conv2D(32, kernel_size=(3, 3), activation="relu")(inp)
+x = Conv2D(64, (3, 3), activation="relu")(x)
+x = MaxPooling2D(pool_size=(2, 2))(x)
+x = Dropout(0.25)(x)
+x = Flatten()(x)
+x = Dense(128, activation="relu")(x)
+x = Dropout(0.5)(x)
+out = Dense(10, activation="softmax")(x)
+model = Model(inp, out)
+
+# Calculae FLOPS
+flops = get_flops(model, batch_size=1)
+print(f"FLOPS: {flops / 10 ** 9:.03} G")
+# >>> FLOPS: 0.0338 G
+```
