@@ -4,7 +4,6 @@ from tensorflow.keras.layers import (
     Conv1D,
     Conv2D,
     Conv3D,
-    Conv1DTranspose,
     Conv2DTranspose,
     DepthwiseConv2D,
     SeparableConv1D,
@@ -88,21 +87,13 @@ def test_conv1d2d3d():
     )
 
 
-def test_conv1d2d3dtranspose():
+def test_conv2dtranspose():
     in_w = 32
     in_h = 32
-    in_z = 32
     in_ch = 3
     kernel = 32
     ker_w = 3
     ker_h = 3
-    ker_z = 3
-
-    model = Sequential(
-        Conv1DTranspose(kernel, (ker_w,), padding="same", input_shape=(in_w, in_ch))
-    )
-    flops = get_flops(model, batch_size=1)
-    assert flops == ((2 * ker_w * in_ch) + 1) * in_w * kernel + 1
 
     model = Sequential(
         Conv2DTranspose(
@@ -244,3 +235,24 @@ def test_dense():
     flops = get_flops(model, batch_size=1)
     assert flops == 2 * in_dense * out_dense
 
+
+def test_conv1dtranspose():
+    ignore = True
+    major, minor, _ = tf.version.VERSION.split(".")
+    if int(major) >= 2 and int(minor) >= 3:
+        ignore = False
+    if ignore:
+        return
+    from tensorflow.keras.layers import Conv1DTranspose
+
+    in_w = 32
+
+    in_ch = 3
+    kernel = 32
+    ker_w = 3
+
+    model = Sequential(
+        Conv1DTranspose(kernel, (ker_w,), padding="same", input_shape=(in_w, in_ch))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == ((2 * ker_w * in_ch) + 1) * in_w * kernel + 1
