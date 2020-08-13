@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7]
+        tf-version: [2.2, 2.3]
         poetry-version: [1.0.0]
 
     steps:
@@ -24,5 +25,8 @@ jobs:
       with:
         poetry-version: ${{ matrix.poetry-version }}
     - run: poetry run python -m pip install --upgrade pip
+    - run: poetry add tensorflow@~${TF_VERSION}
+      env:
+        TF_VERSION: ${{ matrix.tf-version }}
     - run: poetry install
     - run: poetry run bash scripts/test.sh
