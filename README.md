@@ -44,3 +44,35 @@ flops = get_flops(model, batch_size=1)
 print(f"FLOPS: {flops / 10 ** 9:.03} G")
 # >>> FLOPS: 0.0338 G
 ```
+
+## Support
+
+Support `tf.keras.layers` as follows,
+
+| name | layer | 
+| -- | -- |
+| Conv | Conv[1D/2D/3D]|
+| | Conv[1D/2D]Transpose |
+| | DepthwiseConv2D |
+| | SeparableConv[1D/2D] |
+| Pooling | AveragePooling[1D/2D] |
+| | GlobalAveragePooling[1D/2D/3D]|
+| | MaxPooling[1D/2D] |
+| Activation | Softmax |
+| others | Dense |
+
+## Not supported
+
+Not support `tf.keras.layers` as follows. They are calculated as zero or smaller value than correct value.
+
+| name | layer | 
+| -- | -- |
+| Conv | Conv3DTranspose |
+| Pooling | AveragePooling3D |
+| | MaxPooling3D |
+| | GlobalMaxPool[1D/2D/3D] |
+| | UpSampling[1D/2D/3D] |
+| RNN | SimpleRNN |
+| | LSTM |
+| | GRU |
+| others | Embedding |

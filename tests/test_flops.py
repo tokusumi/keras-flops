@@ -1,13 +1,27 @@
 import tensorflow as tf
 from tensorflow.keras import Sequential, Model, Input
 from tensorflow.keras.layers import (
+    Conv1D,
+    Conv2D,
+    Conv3D,
+    Conv1DTranspose,
+    Conv2DTranspose,
+    DepthwiseConv2D,
+    SeparableConv1D,
+    SeparableConv2D,
+    AveragePooling1D,
+    AveragePooling2D,
+    GlobalAveragePooling1D,
+    GlobalAveragePooling2D,
+    GlobalAveragePooling3D,
+    MaxPooling1D,
+    MaxPooling2D,
     Dense,
     Flatten,
-    Conv2D,
-    MaxPooling2D,
     Dropout,
     Activation,
 )
+from tensorflow.python.keras.backend import rnn
 
 from keras_flops import get_flops
 
@@ -38,6 +52,177 @@ def test_ignore():
     assert flops == 0
 
 
+def test_conv1d2d3d():
+    in_w = 32
+    in_h = 32
+    in_z = 32
+    in_ch = 3
+    kernel = 32
+    ker_w = 3
+    ker_h = 3
+    ker_z = 3
+
+    model = Sequential(
+        Conv1D(kernel, (ker_w,), padding="same", input_shape=(in_w, in_ch))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == ((2 * ker_w * in_ch) + 1) * in_w * kernel
+
+    model = Sequential(
+        Conv2D(kernel, (ker_w, ker_h), padding="same", input_shape=(in_w, in_h, in_ch))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == ((2 * ker_w * ker_h * in_ch) + 1) * in_w * in_h * kernel
+
+    model = Sequential(
+        Conv3D(
+            kernel,
+            (ker_w, ker_h, ker_z),
+            padding="same",
+            input_shape=(in_w, in_h, in_z, in_ch),
+        )
+    )
+    flops = get_flops(model, batch_size=1)
+    assert (
+        flops == ((2 * ker_w * ker_h * ker_z * in_ch) + 1) * in_w * in_h * in_z * kernel
+    )
+
+
+def test_conv1d2d3dtranspose():
+    in_w = 32
+    in_h = 32
+    in_z = 32
+    in_ch = 3
+    kernel = 32
+    ker_w = 3
+    ker_h = 3
+    ker_z = 3
+
+    model = Sequential(
+        Conv1DTranspose(kernel, (ker_w,), padding="same", input_shape=(in_w, in_ch))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == ((2 * ker_w * in_ch) + 1) * in_w * kernel + 1
+
+    model = Sequential(
+        Conv2DTranspose(
+            kernel, (ker_w, ker_h), padding="same", input_shape=(in_w, in_h, in_ch)
+        )
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == ((2 * ker_w * ker_h * in_ch) + 1) * in_w * in_h * kernel
+
+
+def test_depthwise_conv2d():
+    in_w = 32
+    in_h = 32
+    in_ch = 3
+    ker_w = 3
+    ker_h = 3
+    model = Sequential(
+        DepthwiseConv2D((ker_w, ker_h), padding="same", input_shape=(in_w, in_h, in_ch))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == ((2 * ker_w * ker_h) + 1) * in_w * in_h * in_ch
+
+
+def test_separable_conv1d2d():
+    in_w = 32
+    in_h = 32
+    in_ch = 3
+    kernel = 32
+    ker_w = 3
+    ker_h = 3
+
+    model = Sequential(
+        SeparableConv1D(kernel, (ker_w,), padding="same", input_shape=(in_w, in_ch))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert (
+        flops
+        == 2 * ker_w * in_w * in_ch  # depthwise conv with no bias
+        + (2 * in_ch + 1) * in_w * kernel  # pointwise conv
+    )
+
+    model = Sequential(
+        SeparableConv2D(
+            kernel, (ker_w, ker_h), padding="same", input_shape=(in_w, in_h, in_ch)
+        )
+    )
+    flops = get_flops(model, batch_size=1)
+    assert (
+        flops
+        == 2 * ker_w * ker_h * in_w * in_h * in_ch  # depthwise conv with no bias
+        + (2 * in_ch + 1) * in_w * in_h * kernel  # pointwise conv
+    )
+
+
+def test_averagepooling1d2d3d():
+    in_w = 32
+    in_h = 32
+    in_z = 32
+    kernel = 32
+    pool_w = 2
+    pool_h = 2
+    pool_z = 2
+
+    model = Sequential(
+        AveragePooling1D(pool_size=(pool_w,), input_shape=(in_w, kernel))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == in_w * kernel
+
+    model = Sequential(
+        AveragePooling2D(pool_size=(pool_w, pool_h), input_shape=(in_w, in_h, kernel))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == in_w * in_h * kernel
+
+
+def test_global_averagepooling1d2d3d():
+    in_w = 32
+    in_h = 32
+    in_z = 32
+    kernel = 32
+
+    model = Sequential(GlobalAveragePooling1D(input_shape=(in_w, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == in_w * kernel
+
+    model = Sequential(GlobalAveragePooling2D(input_shape=(in_w, in_h, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == in_w * in_h * kernel
+
+    model = Sequential(GlobalAveragePooling3D(input_shape=(in_w, in_h, in_z, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == in_w * in_h * in_z * kernel
+
+
+def test_maxpooling1d2d3d():
+    in_w = 32
+    in_h = 32
+    kernel = 32
+    pool_w = 2
+    pool_h = 2
+
+    model = Sequential(MaxPooling1D(pool_size=(pool_w,), input_shape=(in_w, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == in_w * kernel
+
+    model = Sequential(
+        MaxPooling2D(pool_size=(pool_w, pool_h), input_shape=(in_w, in_h, kernel))
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == in_w * in_h * kernel
+
+
+def test_softmax():
+    kernel = 8
+    model = Sequential(Activation("softmax", input_shape=(kernel,)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == 5 * kernel
+
+
 def test_dense():
     in_dense = 8
     out_dense = 3
@@ -59,27 +244,3 @@ def test_dense():
     flops = get_flops(model, batch_size=1)
     assert flops == 2 * in_dense * out_dense
 
-
-def test_cnn():
-    in_w = 32
-    in_h = 32
-    in_ch = 3
-    kernel = 32
-    ker_w = 3
-    ker_h = 3
-    pool_w = 2
-    pool_h = 2
-
-    def build_model():
-        inp = Input((in_w, in_h, in_ch))
-        x = Conv2D(kernel, (ker_w, ker_h), padding="same")(inp)
-        x = MaxPooling2D(pool_size=(pool_w, pool_h))(x)
-        return Model(inp, x)
-
-    model = build_model()
-    flops = get_flops(model, batch_size=1)
-    assert (
-        flops
-        == ((2 * ker_w * ker_h * in_ch) + 1) * in_w * in_h * kernel  # Conv2D
-        + in_w * in_h * kernel  # max pooling2D
-    )
