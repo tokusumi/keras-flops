@@ -15,6 +15,8 @@ from tensorflow.keras.layers import (
     GlobalAveragePooling3D,
     MaxPooling1D,
     MaxPooling2D,
+    BatchNormalization,
+    LayerNormalization,
     Dense,
     Flatten,
     Dropout,
@@ -256,3 +258,31 @@ def test_conv1dtranspose():
     )
     flops = get_flops(model, batch_size=1)
     assert flops == ((2 * ker_w * in_ch) + 1) * in_w * kernel + 1
+
+
+def test_batchnormalization():
+    """
+    batch normalization is calculated as follows,
+    1. (2 ops * |var|) inv = rsqrt(var + eps)
+    2. (1 ops * |var|) inv *= gamma (scale)
+    3. (|x| + |mean| + |var| ops) x' = inv * x + beta (shift) - mean * inv
+    , where |var| = |mean| = channel size in default
+    Thus, 5 * channel size + input element size.
+
+    NOTE: support only fused=False
+    Use gen_nn_ops.fused_batch_norm_v3 but this is not registered yet and calculated as zero. 
+    """
+    in_w = 32
+    in_h = 32
+    in_ch = 3
+
+    model = Sequential(
+        BatchNormalization(
+            beta_initializer="ones",
+            gamma_initializer="ones",
+            input_shape=(in_w, in_ch),
+        )
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == 5 * in_ch + in_w * in_ch, "fused is False"
+
