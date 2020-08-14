@@ -45,6 +45,24 @@ def test_duplicated_calculation():
     assert flops1 == flops2 and flops2 == flops3
 
 
+def test_subclass():
+    class SubClass(tf.keras.Model):
+        def __init__(self):
+            super().__init__()
+            self.dense1 = Dense(10)
+            self.dense2 = Dense(3)
+
+        def call(self, x):
+            x = self.dense1(x)
+            return self.dense2(x)
+
+    inp = Input((30,))
+    x = SubClass()(inp)
+    model = Model(inp, x)
+    flops = get_flops(model, 1)
+    assert flops == (2 * 30 + 1) * 10 + (2 * 10 + 1) * 3
+
+
 def test_ignore():
     model = Sequential(
         [Flatten(input_shape=(16, 16)), Activation("relu"), Dropout(0.25),]
