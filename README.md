@@ -72,6 +72,8 @@ Not support `tf.keras.layers` as follows. They are calculated as zero or smaller
 | | MaxPooling3D |
 | | GlobalMaxPool[1D/2D/3D] |
 | | UpSampling[1D/2D/3D] |
+| Normalization | BatchNormalization |
+| | LayerNormalization | 
 | RNN | SimpleRNN |
 | | LSTM |
 | | GRU |

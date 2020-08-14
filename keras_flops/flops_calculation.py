@@ -4,8 +4,7 @@ from tensorflow.python.framework.convert_to_constants import (
     convert_variables_to_constants_v2_as_graph,
 )
 
-from tensorflow.keras import Sequential, Model, Input
-from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras import Sequential, Model
 
 
 def get_flops(model: Union[Model, Sequential], batch_size: Optional[int] = None) -> int:
@@ -33,7 +32,7 @@ def get_flops(model: Union[Model, Sequential], batch_size: Optional[int] = None)
     run_meta = tf.compat.v1.RunMetadata()
     opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
     flops = tf.compat.v1.profiler.profile(
-        graph=frozen_func.graph, run_meta=run_meta, cmd="op", options=opts
+        graph=frozen_func.graph, run_meta=run_meta, cmd="scope", options=opts
     )
     # TODO: show each FLOPS
     return flops.total_float_ops

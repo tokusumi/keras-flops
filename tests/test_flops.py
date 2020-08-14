@@ -15,6 +15,8 @@ from tensorflow.keras.layers import (
     GlobalAveragePooling3D,
     MaxPooling1D,
     MaxPooling2D,
+    BatchNormalization,
+    LayerNormalization,
     Dense,
     Flatten,
     Dropout,
@@ -41,6 +43,24 @@ def test_duplicated_calculation():
     flops2 = get_flops(model)
     flops3 = get_flops(model)
     assert flops1 == flops2 and flops2 == flops3
+
+
+def test_subclass():
+    class SubClass(tf.keras.Model):
+        def __init__(self):
+            super().__init__()
+            self.dense1 = Dense(10)
+            self.dense2 = Dense(3)
+
+        def call(self, x):
+            x = self.dense1(x)
+            return self.dense2(x)
+
+    inp = Input((30,))
+    x = SubClass()(inp)
+    model = Model(inp, x)
+    flops = get_flops(model, 1)
+    assert flops == (2 * 30 + 1) * 10 + (2 * 10 + 1) * 3
 
 
 def test_ignore():
@@ -256,3 +276,31 @@ def test_conv1dtranspose():
     )
     flops = get_flops(model, batch_size=1)
     assert flops == ((2 * ker_w * in_ch) + 1) * in_w * kernel + 1
+
+
+def test_batchnormalization():
+    """
+    batch normalization is calculated as follows,
+    1. (2 ops * |var|) inv = rsqrt(var + eps)
+    2. (1 ops * |var|) inv *= gamma (scale)
+    3. (|x| + |mean| + |var| ops) x' = inv * x + beta (shift) - mean * inv
+    , where |var| = |mean| = channel size in default
+    Thus, 5 * channel size + input element size.
+
+    NOTE: support only fused=False
+    Use gen_nn_ops.fused_batch_norm_v3 but this is not registered yet and calculated as zero. 
+    """
+    in_w = 32
+    in_h = 32
+    in_ch = 3
+
+    model = Sequential(
+        BatchNormalization(
+            beta_initializer="ones",
+            gamma_initializer="ones",
+            input_shape=(in_w, in_ch),
+        )
+    )
+    flops = get_flops(model, batch_size=1)
+    assert flops == 5 * in_ch + in_w * in_ch, "fused is False"
+
