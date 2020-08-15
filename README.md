@@ -58,6 +58,7 @@ Support `tf.keras.layers` as follows,
 | Pooling | AveragePooling[1D/2D] |
 | | GlobalAveragePooling[1D/2D/3D]|
 | | MaxPooling[1D/2D] |
+| | GlobalMaxPool[1D/2D/3D] |
 | Activation | Softmax |
 | others | Dense |
 
@@ -70,7 +71,6 @@ Not support `tf.keras.layers` as follows. They are calculated as zero or smaller
 | Conv | Conv3DTranspose |
 | Pooling | AveragePooling3D |
 | | MaxPooling3D |
-| | GlobalMaxPool[1D/2D/3D] |
 | | UpSampling[1D/2D/3D] |
 | Normalization | BatchNormalization |
 | | LayerNormalization | 

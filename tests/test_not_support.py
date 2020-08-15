@@ -8,9 +8,6 @@ from tensorflow.keras.layers import (
     Conv3DTranspose,
     AveragePooling3D,
     MaxPooling3D,
-    GlobalMaxPooling1D,
-    GlobalMaxPooling2D,
-    GlobalMaxPooling3D,
     UpSampling1D,
     UpSampling2D,
     UpSampling3D,
@@ -131,26 +128,6 @@ def test_maxpooling1d2d3d():
             pool_size=(pool_w, pool_h, pool_z), input_shape=(in_w, in_h, in_z, kernel)
         )
     )
-    flops = get_flops(model, batch_size=1)
-    assert flops == in_w * in_h * in_z * kernel
-
-
-@pytest.mark.xfail
-def test_global_maxpooling1d2d3d():
-    in_w = 32
-    in_h = 32
-    in_z = 32
-    kernel = 32
-
-    model = Sequential(GlobalMaxPooling1D(input_shape=(in_w, kernel)))
-    flops = get_flops(model, batch_size=1)
-    assert flops == in_w * kernel
-
-    model = Sequential(GlobalMaxPooling2D(input_shape=(in_w, in_h, kernel)))
-    flops = get_flops(model, batch_size=1)
-    assert flops == in_w * in_h * kernel
-
-    model = Sequential(GlobalMaxPooling3D(input_shape=(in_w, in_h, in_z, kernel)))
     flops = get_flops(model, batch_size=1)
     assert flops == in_w * in_h * in_z * kernel
 

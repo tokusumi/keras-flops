@@ -15,8 +15,10 @@ from tensorflow.keras.layers import (
     GlobalAveragePooling3D,
     MaxPooling1D,
     MaxPooling2D,
+    GlobalMaxPooling1D,
+    GlobalMaxPooling2D,
+    GlobalMaxPooling3D,
     BatchNormalization,
-    LayerNormalization,
     Dense,
     Flatten,
     Dropout,
@@ -225,6 +227,29 @@ def test_maxpooling1d2d3d():
     )
     flops = get_flops(model, batch_size=1)
     assert flops == in_w * in_h * kernel
+
+
+def test_global_maxpooling1d2d3d():
+    """
+    reduct rest (Ndim) of target axis.
+    compare Ndim - 1 ops.
+    """
+    in_w = 32
+    in_h = 32
+    in_z = 32
+    kernel = 3
+
+    model = Sequential(GlobalMaxPooling1D(input_shape=(in_w, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == (in_w - 1) * kernel
+
+    model = Sequential(GlobalMaxPooling2D(input_shape=(in_w, in_h, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == (in_w * in_h - 1) * kernel
+
+    model = Sequential(GlobalMaxPooling3D(input_shape=(in_w, in_h, in_z, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == (in_w * in_h * in_z - 1) * kernel
 
 
 def test_softmax():
