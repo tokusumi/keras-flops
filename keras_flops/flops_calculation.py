@@ -23,9 +23,10 @@ def get_flops(model: Union[Model, Sequential], batch_size: Optional[int] = None)
 
     # convert tf.keras model into frozen graph to count FLOPS about operations used at inference
     # FLOPS depends on batch size
-    real_model = tf.function(model).get_concrete_function(
-        tf.TensorSpec([batch_size] + model.inputs[0].shape[1:], model.inputs[0].dtype)
-    )
+    inputs = [
+        tf.TensorSpec([batch_size] + inp.shape[1:], inp.dtype) for inp in model.inputs
+    ]
+    real_model = tf.function(model).get_concrete_function(inputs)
     frozen_func, _ = convert_variables_to_constants_v2_as_graph(real_model)
 
     # Calculate FLOPS with tf.profiler

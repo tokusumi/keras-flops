@@ -16,7 +16,6 @@ from tensorflow.keras.layers import (
     MaxPooling1D,
     MaxPooling2D,
     BatchNormalization,
-    LayerNormalization,
     Dense,
     Flatten,
     Dropout,
@@ -61,6 +60,14 @@ def test_subclass():
     model = Model(inp, x)
     flops = get_flops(model, 1)
     assert flops == (2 * 30 + 1) * 10 + (2 * 10 + 1) * 3
+
+
+def test_multi_input():
+    inputs = [Input((5,)), Input(5,)]
+    out = tf.keras.layers.Multiply()(inputs)
+    model = Model(inputs, out)
+    flops = get_flops(model, 1)
+    assert flops == 5
 
 
 def test_ignore():
