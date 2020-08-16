@@ -16,13 +16,13 @@ from tensorflow.keras.layers import (
     MaxPooling1D,
     MaxPooling2D,
     BatchNormalization,
-    LayerNormalization,
+    AdditiveAttention,
+    Attention,
     Dense,
     Flatten,
     Dropout,
     Activation,
 )
-from tensorflow.python.keras.backend import rnn
 
 from keras_flops import get_flops
 
@@ -61,6 +61,14 @@ def test_subclass():
     model = Model(inp, x)
     flops = get_flops(model, 1)
     assert flops == (2 * 30 + 1) * 10 + (2 * 10 + 1) * 3
+
+
+def test_multi_input():
+    inputs = [Input((5,)), Input(5,)]
+    out = tf.keras.layers.Multiply()(inputs)
+    model = Model(inputs, out)
+    flops = get_flops(model, 1)
+    assert flops == 5
 
 
 def test_ignore():
@@ -304,3 +312,61 @@ def test_batchnormalization():
     flops = get_flops(model, batch_size=1)
     assert flops == 5 * in_ch + in_w * in_ch, "fused is False"
 
+
+def test_additive_attention():
+    """
+    Bahdanau-style attention. query (batch, Tq, dim), key (batch, Tv, dim) and value (batch, Tv, dim) are inputs.
+    following computations is processed.
+    1. reshape query as shape [batch, Tq, 1, dim] and value as shape [batch, 1, Tv, dim]
+    2. broadcasting multiply between both of above as output shape [batch, Tq, Tv, dim]
+    3. reduce_sum above with dim axis as output shape [batch, Tq, Tv]
+    4. softmax of above
+    5. MatMul between 4. and value as output shape [batch, Tq, dim]
+    """
+    Tq = 10
+    Tv = 10
+    dim = 16
+    q_shape = (Tq, dim)
+    k_shape = (Tv, dim)
+    v_shape = (Tv, dim)
+    q = Input(q_shape)
+    k = Input(k_shape)
+    v = Input(v_shape)
+    x = AdditiveAttention()([q, k, v])
+    model = Model([q, k, v], x)
+    flops = get_flops(model, batch_size=1)
+    assert (
+        flops
+        == Tq * Tv * dim  # No.2 (multiply)
+        + Tq * Tv * (dim - 1)  # No.3 (reduce_sum)
+        + 5 * Tq * Tv  # No.4 (softmax)
+        + 2 * Tv * Tq * dim  # No.5 (MatMul)
+    )
+
+
+def test_attention():
+    """
+    Luong-style attention. query (batch, Tq, dim), key (batch, Tv, dim) and value (batch, Tv, dim) are inputs.
+    following computations is processed.
+    1. query-key dot-product as output shape [batch, Tq, Tv]
+    2. softmax of above
+    3. MatMul between 2. and value as output shape [batch, Tq, dim]
+    """
+    Tq = 10
+    Tv = 10
+    dim = 16
+    q_shape = (Tq, dim)
+    k_shape = (Tv, dim)
+    v_shape = (Tv, dim)
+    q = Input(q_shape)
+    k = Input(k_shape)
+    v = Input(v_shape)
+    x = Attention()([q, k, v])
+    model = Model([q, k, v], x)
+    flops = get_flops(model, batch_size=1)
+    assert (
+        flops
+        == 2 * Tq * Tv * dim  # No.1 (dot-product (MatMul))
+        + 5 * Tq * Tv  # No.2 (softmax)
+        + 2 * Tv * Tq * dim  # No.3 (MatMul)
+    )
