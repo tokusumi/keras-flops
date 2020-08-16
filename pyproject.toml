@@ -1,13 +1,22 @@
 [tool.poetry]
 name = "keras-flops"
-version = "0.1.0"
-description = ""
+version = "0.1.1"
+description = "FLOPs calculator for neural network architecture written in tensorflow 2.x (tf.keras)"
 authors = ["tokusumi <tksmtoms@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/tokusumi/keras-flops"
 include = [
     "LICENSE",
+]
+keywords = ["tensorflow2", "flops", "profiler"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 [tool.poetry.dependencies]
