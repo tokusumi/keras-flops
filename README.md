@@ -59,6 +59,8 @@ Support `tf.keras.layers` as follows,
 | | GlobalAveragePooling[1D/2D/3D]|
 | | MaxPooling[1D/2D] |
 | Activation | Softmax |
+| Attention | Attention |
+| | AdditiveAttention |
 | others | Dense |
 
 ## Not supported
