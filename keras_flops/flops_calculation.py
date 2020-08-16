@@ -6,6 +6,8 @@ from tensorflow.python.framework.convert_to_constants import (
 
 from tensorflow.keras import Sequential, Model
 
+import keras_flops.flops_registory
+
 
 def get_flops(model: Union[Model, Sequential], batch_size: Optional[int] = None) -> int:
     """
@@ -35,5 +37,6 @@ def get_flops(model: Union[Model, Sequential], batch_size: Optional[int] = None)
     flops = tf.compat.v1.profiler.profile(
         graph=frozen_func.graph, run_meta=run_meta, cmd="scope", options=opts
     )
+    # print(frozen_func.graph.get_operations())
     # TODO: show each FLOPS
     return flops.total_float_ops

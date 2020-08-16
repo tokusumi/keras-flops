@@ -15,6 +15,9 @@ from tensorflow.keras.layers import (
     GlobalAveragePooling3D,
     MaxPooling1D,
     MaxPooling2D,
+    GlobalMaxPooling1D,
+    GlobalMaxPooling2D,
+    GlobalMaxPooling3D,
     BatchNormalization,
     AdditiveAttention,
     Attention,
@@ -235,6 +238,29 @@ def test_maxpooling1d2d3d():
     assert flops == in_w * in_h * kernel
 
 
+def test_global_maxpooling1d2d3d():
+    """
+    reduct rest (Ndim) of target axis.
+    compare Ndim - 1 ops.
+    """
+    in_w = 32
+    in_h = 32
+    in_z = 32
+    kernel = 3
+
+    model = Sequential(GlobalMaxPooling1D(input_shape=(in_w, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == (in_w - 1) * kernel
+
+    model = Sequential(GlobalMaxPooling2D(input_shape=(in_w, in_h, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == (in_w * in_h - 1) * kernel
+
+    model = Sequential(GlobalMaxPooling3D(input_shape=(in_w, in_h, in_z, kernel)))
+    flops = get_flops(model, batch_size=1)
+    assert flops == (in_w * in_h * in_z - 1) * kernel
+
+
 def test_softmax():
     kernel = 8
     model = Sequential(Activation("softmax", input_shape=(kernel,)))
@@ -293,10 +319,7 @@ def test_batchnormalization():
     2. (1 ops * |var|) inv *= gamma (scale)
     3. (|x| + |mean| + |var| ops) x' = inv * x + beta (shift) - mean * inv
     , where |var| = |mean| = channel size in default
-    Thus, 5 * channel size + input element size.
-
-    NOTE: support only fused=False
-    Use gen_nn_ops.fused_batch_norm_v3 but this is not registered yet and calculated as zero. 
+    Thus, tot FLOPs = 5 * channel size + input element size.
     """
     in_w = 32
     in_h = 32
@@ -310,7 +333,21 @@ def test_batchnormalization():
         )
     )
     flops = get_flops(model, batch_size=1)
-    assert flops == 5 * in_ch + in_w * in_ch, "fused is False"
+    assert (
+        flops == 5 * in_ch + in_w * in_ch
+    ), "fused is False. see nn_impl.batch_normalization"
+
+    model = Sequential(
+        BatchNormalization(
+            beta_initializer="ones",
+            gamma_initializer="ones",
+            input_shape=(in_w, in_h, in_ch),
+        )
+    )
+    flops = get_flops(model, batch_size=1)
+    assert (
+        flops == 5 * in_ch + in_w * in_h * in_ch
+    ), "fused is True, see gen_nn.fused_batch_norm_v3"
 
 
 def test_additive_attention():
