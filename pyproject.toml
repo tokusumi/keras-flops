@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "keras-flops"
 version = "0.1.1"
-description = "FLOPs calculator for neural network architecture written in tensorflow 2.x (tf.keras)"
+description = "FLOPs calculator with tf.profiler for neural network architecture written in tensorflow 2.x (tf.keras)"
 authors = ["tokusumi <tksmtoms@gmail.com>"]
 license = "MIT"
 readme = "README.md"
