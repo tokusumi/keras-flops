@@ -1,6 +1,7 @@
 # keras-flops
 
 ![](https://github.com/tokusumi/keras-flops/workflows/Tests/badge.svg)
+[![PyPI version](https://badge.fury.io/py/keras-flops.svg)](https://badge.fury.io/py/keras-flops)
 
 FLOPs calculator for neural network architecture written in tensorflow (tf.keras) v2.2+
 
@@ -13,9 +14,11 @@ This stands on the shoulders of giants, [tf.profiler](https://www.tensorflow.org
 
 ## Installation
 
-This implementation is simple thanks to stands on the shoulders of giants, [tf.profiler](https://www.tensorflow.org/api_docs/python/tf/compat/v1/profiler/Profiler). Only one function is defined.
+Using pip:
 
-Copy and paste [it](https://github.com/tokusumi/keras-flops/blob/master/keras_flops/flops_calculation.py).
+```
+pip install keras-flops
+```
 
 ## Example
 
