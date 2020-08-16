@@ -11,7 +11,6 @@ from tensorflow.keras.layers import (
     UpSampling1D,
     UpSampling2D,
     UpSampling3D,
-    BatchNormalization,
     LayerNormalization,
 )
 from keras_flops import get_flops
@@ -160,28 +159,6 @@ def test_upsampling1d2d3d():
 
 
 @pytest.mark.xfail
-def test_batchnormalization():
-    """
-    batch normalization in tf uses gen_nn_ops.fused_batch_norm_v3 if input shape are 4D
-    """
-    in_w = 32
-    in_h = 32
-    in_ch = 3
-
-    model = Sequential(
-        BatchNormalization(
-            beta_initializer="ones",
-            gamma_initializer="ones",
-            input_shape=(in_w, in_h, in_ch),
-        )
-    )
-    flops = get_flops(model, batch_size=1)
-    assert (
-        flops == 5 * in_ch + in_w * in_h * in_ch
-    ), "fused is True, fused_batch_norm_v3 is not supportted"
-
-
-@pytest.mark.xfail
 def test_layernormalization():
     """
     layer normalization is calculated as follows,
@@ -190,11 +167,12 @@ def test_layernormalization():
     2. (1 ops * |var|) inv *= gamma (scale)
     3. (|x| + |mean| + |var| ops) x' = inv * x + beta (shift) - mean * inv
     , where |var| = |mean| = 1 in default
-    Thus, 5 channel size + input element size.
+    Thus, 5 + input element size.
 
-    Use nn.fused_batch_norm (gen_nn_ops.fused_batch_norm_v3) for layer normalization, above calculation,
-    but gen_nn_ops.fused_batch_norm_v3 is not registered yet, so can not evaluate corrent FLOPs.
+    Use nn.fused_batch_norm (gen_nn_ops.fused_batch_norm_v3) for layer normalization, above calculation.
+    gen_nn_ops.fused_batch_norm_v3 support only 4D, so reshape data as 4D and input them.
     squeezed_shape (ndim ops), scale (|x| ops) and shift (not float ops) is calculated.
+    NOTE: is_training = True, if make trainable attributes of tf.keras.Model instanse False. So, statistics will be incorrect.
     """
     in_w = 32
     in_h = 32
@@ -221,6 +199,13 @@ def test_layernormalization():
         )
     )
     flops = get_flops(model, batch_size=1)
-    assert flops == len(input_shape) + 1 + in_w * in_h * in_ch, "fused is True"
+    assert (
+        flops
+        == len(input_shape)
+        + 1
+        + 5
+        + in_w * in_h * in_ch
+        + 5 * in_ch
+        + in_w * in_h * in_ch
+    ), "fused is True. check gen_nn_ops.fused_batch_norm_v3"
 
-    assert flops == len(input_shape) + 1 + 5 * in_ch + in_w * in_h * in_ch

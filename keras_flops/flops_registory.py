@@ -5,9 +5,24 @@ from tensorflow.python.profiler.internal.flops_registry import _reduction_op_flo
 
 
 @ops.RegisterStatistics("FusedBatchNormV3", "flops")
-def _FusedBatchNormV3(graph, node):
-    """inference is supportted"""
-    return ops.OpStats("flops", 10)
+def _flops_fused_batch_norm_v3(graph, node):
+    """inference is only supportted"""
+    in_shape = graph_util.tensor_shape_from_node_def_name(graph, node.input[0])
+    in_shape.assert_is_fully_defined()
+    mean_shape = graph_util.tensor_shape_from_node_def_name(graph, node.input[3])
+    mean_shape.assert_is_fully_defined()
+    variance_shape = graph_util.tensor_shape_from_node_def_name(graph, node.input[4])
+    variance_shape.assert_is_fully_defined()
+
+    if node.attr["is_training"].b is True:
+        raise ValueError("Only supports inference mode")
+
+    num_flops = (
+        in_shape.num_elements()
+        + 4 * variance_shape.num_elements()
+        + mean_shape.num_elements()
+    )
+    return ops.OpStats("flops", num_flops)
 
 
 @ops.RegisterStatistics("Max", "flops")

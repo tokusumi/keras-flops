@@ -19,6 +19,7 @@ from tensorflow.keras.layers import (
     GlobalMaxPooling2D,
     GlobalMaxPooling3D,
     BatchNormalization,
+    LayerNormalization,
     Dense,
     Flatten,
     Dropout,
@@ -310,10 +311,7 @@ def test_batchnormalization():
     2. (1 ops * |var|) inv *= gamma (scale)
     3. (|x| + |mean| + |var| ops) x' = inv * x + beta (shift) - mean * inv
     , where |var| = |mean| = channel size in default
-    Thus, 5 * channel size + input element size.
-
-    NOTE: support only fused=False
-    Use gen_nn_ops.fused_batch_norm_v3 but this is not registered yet and calculated as zero. 
+    Thus, tot FLOPs = 5 * channel size + input element size.
     """
     in_w = 32
     in_h = 32
@@ -327,5 +325,19 @@ def test_batchnormalization():
         )
     )
     flops = get_flops(model, batch_size=1)
-    assert flops == 5 * in_ch + in_w * in_ch, "fused is False"
+    assert (
+        flops == 5 * in_ch + in_w * in_ch
+    ), "fused is False. see nn_impl.batch_normalization"
+
+    model = Sequential(
+        BatchNormalization(
+            beta_initializer="ones",
+            gamma_initializer="ones",
+            input_shape=(in_w, in_h, in_ch),
+        )
+    )
+    flops = get_flops(model, batch_size=1)
+    assert (
+        flops == 5 * in_ch + in_w * in_h * in_ch
+    ), "fused is True, see gen_nn.fused_batch_norm_v3"
 
