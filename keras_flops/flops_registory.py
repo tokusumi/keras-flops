@@ -1,7 +1,10 @@
 import numpy as np
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import graph_util
-from tensorflow.python.profiler.internal.flops_registry import _reduction_op_flops
+from tensorflow.python.profiler.internal.flops_registry import (
+    _reduction_op_flops,
+    _binary_per_element_op_flops,
+)
 
 
 @ops.RegisterStatistics("FusedBatchNormV3", "flops")
@@ -18,8 +21,8 @@ def _flops_fused_batch_norm_v3(graph, node):
         raise ValueError("Only supports inference mode")
 
     num_flops = (
-        in_shape.num_elements()
-        + 4 * variance_shape.num_elements()
+        2 * in_shape.num_elements()
+        + 5 * variance_shape.num_elements()
         + mean_shape.num_elements()
     )
     return ops.OpStats("flops", num_flops)
@@ -30,4 +33,10 @@ def _flops_max(graph, node):
     """inference is supportted"""
     # reduction - comparison, no finalization
     return _reduction_op_flops(graph, node, reduce_flops=1, finalize_flops=0)
+
+
+@ops.RegisterStatistics("AddV2", "flops")
+def _flops_add(graph, node):
+    """inference is supportted"""
+    return _binary_per_element_op_flops(graph, node)
 

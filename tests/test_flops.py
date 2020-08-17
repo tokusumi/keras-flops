@@ -315,11 +315,11 @@ def test_conv1dtranspose():
 def test_batchnormalization():
     """
     batch normalization is calculated as follows,
-    1. (2 ops * |var|) inv = rsqrt(var + eps)
+    1. (3 ops * |var|) inv = rsqrt(var + eps)
     2. (1 ops * |var|) inv *= gamma (scale)
-    3. (|x| + |mean| + |var| ops) x' = inv * x + beta (shift) - mean * inv
+    3. (2 * |x| + |mean| + |var| ops) x' = inv * x + beta (shift) - mean * inv
     , where |var| = |mean| = channel size in default
-    Thus, tot FLOPs = 5 * channel size + input element size.
+    Thus, tot FLOPs = 6 * channel size + 2 * input element size.
     """
     in_w = 32
     in_h = 32
@@ -334,7 +334,7 @@ def test_batchnormalization():
     )
     flops = get_flops(model, batch_size=1)
     assert (
-        flops == 5 * in_ch + in_w * in_ch
+        flops == 6 * in_ch + 2 * in_w * in_ch
     ), "fused is False. see nn_impl.batch_normalization"
 
     model = Sequential(
@@ -346,7 +346,7 @@ def test_batchnormalization():
     )
     flops = get_flops(model, batch_size=1)
     assert (
-        flops == 5 * in_ch + in_w * in_h * in_ch
+        flops == 6 * in_ch + 2 * in_w * in_h * in_ch
     ), "fused is True, see gen_nn.fused_batch_norm_v3"
 
 
@@ -355,7 +355,7 @@ def test_additive_attention():
     Bahdanau-style attention. query (batch, Tq, dim), key (batch, Tv, dim) and value (batch, Tv, dim) are inputs.
     following computations is processed.
     1. reshape query as shape [batch, Tq, 1, dim] and value as shape [batch, 1, Tv, dim]
-    2. broadcasting multiply between both of above as output shape [batch, Tq, Tv, dim]
+    2. broadcasting multiply between additive of above as output shape [batch, Tq, Tv, dim]
     3. reduce_sum above with dim axis as output shape [batch, Tq, Tv]
     4. softmax of above
     5. MatMul between 4. and value as output shape [batch, Tq, dim]
@@ -375,6 +375,7 @@ def test_additive_attention():
     assert (
         flops
         == Tq * Tv * dim  # No.2 (multiply)
+        + Tq * Tv * dim  # No.3 (add)
         + Tq * Tv * (dim - 1)  # No.3 (reduce_sum)
         + 5 * Tq * Tv  # No.4 (softmax)
         + 2 * Tv * Tq * dim  # No.5 (MatMul)
