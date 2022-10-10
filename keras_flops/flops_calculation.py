@@ -9,7 +9,10 @@ from tensorflow.keras import Sequential, Model
 import keras_flops.flops_registory
 
 
-def get_flops(model: Union[Model, Sequential], batch_size: Optional[int] = None) -> int:
+def get_flops(model: Union[Model, Sequential], \
+              batch_size: Optional[int] = None,\
+              order_by = 'name',\
+              outfile = None) -> int:
     """
     Calculate FLOPS for tf.keras.Model or tf.keras.Sequential .
     Ignore operations used in only training mode such as Initialization.
@@ -34,6 +37,9 @@ def get_flops(model: Union[Model, Sequential], batch_size: Optional[int] = None)
     # Calculate FLOPS with tf.profiler
     run_meta = tf.compat.v1.RunMetadata()
     opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
+    opts['order_by'] = order_by
+    if outfile != None:
+        opts['output'] = f'file:outfile={outfile}'
     flops = tf.compat.v1.profiler.profile(
         graph=frozen_func.graph, run_meta=run_meta, cmd="scope", options=opts
     )
