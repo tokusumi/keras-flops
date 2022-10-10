@@ -36,12 +36,16 @@ def get_flops(model: Union[Model, Sequential], \
 
     # Calculate FLOPS with tf.profiler
     run_meta = tf.compat.v1.RunMetadata()
-    opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
-    opts['order_by'] = order_by
+    opts = tf.compat.v1.profiler.ProfileOptionBuilder(
+               tf.compat.v1.profiler.ProfileOptionBuilder.float_operation())
+    opts.order_by(order_by)
     if outfile != None:
-        opts['output'] = f'file:outfile={outfile}'
+        opts.with_file_output(outfile)
+    else:
+        opts.with_stdout_output()
+
     flops = tf.compat.v1.profiler.profile(
-        graph=frozen_func.graph, run_meta=run_meta, cmd="scope", options=opts
+        graph=frozen_func.graph, run_meta=run_meta, cmd="scope", options=opts.build()
     )
     # print(frozen_func.graph.get_operations())
     # TODO: show each FLOPS
